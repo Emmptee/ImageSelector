@@ -5,12 +5,12 @@ import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.ViewGroup;
 
-public class GridLayoutManager extends android.support.v7.widget.GridLayoutManager {
-    public GridLayoutManager(Context context, int spanCount) {
+public class MyGridLayoutManager extends android.support.v7.widget.GridLayoutManager {
+    public MyGridLayoutManager(Context context, int spanCount) {
         super(context, spanCount);
     }
 
-    public GridLayoutManager(Context context, int spanCount, int orientation, boolean reverseLayout) {
+    public MyGridLayoutManager(Context context, int spanCount, int orientation, boolean reverseLayout) {
         super(context, spanCount, orientation, reverseLayout);
     }
 

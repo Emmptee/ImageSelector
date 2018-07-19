@@ -37,7 +37,7 @@ public class ImageAdapter extends
     /**
      * 点击添加图片跳转
      */
-    private onAddPicClickListener mOnAddPicClickListener;
+    public onAddPicClickListener mOnAddPicClickListener;
 
     public interface onAddPicClickListener {
         void onAddPicClick();

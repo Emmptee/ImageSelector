@@ -1,11 +1,39 @@
 package com.sdf.myapplication;
 
+import android.Manifest;
+import android.content.Intent;
+import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
+import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity {
+import com.luck.picture.lib.PictureSelector;
+import com.luck.picture.lib.config.PictureConfig;
+import com.luck.picture.lib.config.PictureMimeType;
+import com.luck.picture.lib.entity.LocalMedia;
+import com.luck.picture.lib.permissions.RxPermissions;
+import com.luck.picture.lib.tools.PictureFileUtils;
+import com.socks.library.KLog;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+
+    private List<LocalMedia> selectAudioList = new ArrayList<>();
+    private List<LocalMedia> selecPictList = new ArrayList<>();
+    private List<LocalMedia> selectVideoList = new ArrayList<>();
+    private int clickType = 5;
+
+    private int maxSelectNum = 9;
 
     private Button mAudioBtn;
     private Button mPicBtn;
@@ -13,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView mAudioRecycler;
     private RecyclerView mPicRecycler;
     private RecyclerView mVideoRecycler;
+    private ImageAdapter audioAdapter, picAdapter, videoAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -24,5 +53,233 @@ public class MainActivity extends AppCompatActivity {
         mAudioRecycler = (RecyclerView) findViewById(R.id.recycler_audio);
         mPicRecycler = (RecyclerView) findViewById(R.id.recycler_pic);
         mVideoRecycler = (RecyclerView) findViewById(R.id.recycler_video);
+
+        mAudioBtn.setOnClickListener(this);
+        mPicBtn.setOnClickListener(this);
+        mVideoBtn.setOnClickListener(this);
+
+        MyGridLayoutManager audioManager = new MyGridLayoutManager(MainActivity.this, 4, GridLayoutManager.VERTICAL, false);
+        mAudioRecycler.setLayoutManager(audioManager);
+        audioAdapter = new ImageAdapter(MainActivity.this, onAddAudioClickListener);
+        audioAdapter.setList(selectAudioList);
+        audioAdapter.setSelectMax(maxSelectNum);
+        mAudioRecycler.setAdapter(audioAdapter);
+        audioAdapter.setOnItemClickListener(new ImageAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(int position, View v) {
+                if (selectAudioList.size() > 0) {
+                    LocalMedia media = selectAudioList.get(position);
+                    PictureSelector.create(MainActivity.this).externalPictureAudio(media.getPath());
+                }
+            }
+        });
+
+        MyGridLayoutManager picManager = new MyGridLayoutManager(MainActivity.this, 3, GridLayoutManager.VERTICAL, false);
+        mPicRecycler.setLayoutManager(picManager);
+        picAdapter = new ImageAdapter(MainActivity.this, onAddPicClickListener);
+        picAdapter.setList(selecPictList);
+        picAdapter.setSelectMax(maxSelectNum);
+        mPicRecycler.setAdapter(picAdapter);
+        picAdapter.setOnItemClickListener(new ImageAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(int position, View v) {
+                if (selecPictList.size() > 0) {
+                    PictureSelector.create(MainActivity.this).themeStyle(
+                            R.style.picture_default_style).openExternalPreview(position, selecPictList);
+                }
+            }
+        });
+
+        MyGridLayoutManager videoManager = new MyGridLayoutManager(MainActivity.this, 4, GridLayoutManager.VERTICAL, false);
+        mVideoRecycler.setLayoutManager(videoManager);
+        videoAdapter = new ImageAdapter(MainActivity.this, onAddVideoClickListener);
+        videoAdapter.setList(selectVideoList);
+        videoAdapter.setSelectMax(maxSelectNum);
+        mVideoRecycler.setAdapter(videoAdapter);
+        videoAdapter.setOnItemClickListener(new ImageAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(int position, View v) {
+                if (selectVideoList.size() > 0) {
+                    LocalMedia media = selectVideoList.get(position);
+                    PictureSelector.create(MainActivity.this).externalPictureVideo(media.getPath());
+
+                }
+            }
+        });
+
+        // 清空图片缓存，包括裁剪、压缩后的图片 注意:必须要在上传完成后调用 必须要获取权限
+        RxPermissions permissions = new RxPermissions(this);
+        permissions.request(Manifest.permission.WRITE_EXTERNAL_STORAGE).subscribe(new Observer<Boolean>() {
+            @Override
+            public void onSubscribe(Disposable d) {
+            }
+
+            @Override
+            public void onNext(Boolean aBoolean) {
+                if (aBoolean) {
+                    PictureFileUtils.deleteCacheDirFile(MainActivity.this);
+                } else {
+                    Toast.makeText(MainActivity.this,
+                            getString(R.string.picture_jurisdiction), Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onError(Throwable e) {
+            }
+
+            @Override
+            public void onComplete() {
+            }
+        });
+    }
+
+    private ImageAdapter.onAddPicClickListener onAddAudioClickListener = new ImageAdapter.onAddPicClickListener() {
+        @Override
+        public void onAddPicClick() {
+            // 进入相册 以下是例子：不需要的api可以不写
+            PictureSelector.create(MainActivity.this)
+                    .openGallery(PictureMimeType.ofAudio())// 全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
+                    .theme(R.style.picture_default_style)// 主题样式设置 具体参考 values/styles   用法：R.style.picture.white.style
+                    .maxSelectNum(maxSelectNum)// 最大图片选择数量
+                    .minSelectNum(1)// 最小选择数量
+                    .imageSpanCount(3)// 每行显示个数
+                    .selectionMode(PictureConfig.MULTIPLE)// 多选 or 单选
+                    .previewImage(true)// 是否可预览图片
+                    .previewVideo(true)// 是否可预览视频
+                    .enablePreviewAudio(true) // 是否可播放音频
+                    .isCamera(false)// 是否显示拍照按钮
+                    .isZoomAnim(true)// 图片列表点击 缩放效果 默认true
+                    .enableCrop(false)// 是否裁剪
+                    .compress(false)// 是否压缩
+                    .synOrAsy(true)//同步true或异步false 压缩 默认同步
+                    //.compressSavePath(getPath())//压缩图片保存地址
+                    //.sizeMultiplier(0.5f)// glide 加载图片大小 0~1之间 如设置 .glideOverride()无效
+                    .glideOverride(160, 160)// glide 加载宽高，越小图片列表越流畅，但会影响列表图片浏览的清晰度
+                    .hideBottomControls(false)// 是否显示uCrop工具栏，默认不显示
+                    .isGif(true)// 是否显示gif图片
+                    .selectionMedia(selectAudioList)// 是否传入已选图片
+                    .previewEggs(true)// 预览图片时 是否增强左右滑动图片体验(图片滑动一半即可看到上一张是否选中)
+                    .minimumCompressSize(100)// 小于100kb的图片不压缩
+                    .forResult(PictureConfig.TYPE_AUDIO);//结果回调onActivityResult code
+        }
+    };
+
+    private ImageAdapter.onAddPicClickListener onAddPicClickListener = new ImageAdapter.onAddPicClickListener() {
+        @Override
+        public void onAddPicClick() {
+            // 进入相册 以下是例子：不需要的api可以不写
+            PictureSelector.create(MainActivity.this)
+                    .openGallery(PictureMimeType.ofImage())// 全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
+                    .theme(R.style.picture_default_style)// 主题样式设置 具体参考 values/styles   用法：R.style.picture.white.style
+                    .maxSelectNum(maxSelectNum)// 最大图片选择数量
+                    .minSelectNum(1)// 最小选择数量
+                    .imageSpanCount(3)// 每行显示个数
+                    .selectionMode(PictureConfig.MULTIPLE)// 多选 or 单选
+                    .previewImage(true)// 是否可预览图片
+                    .previewVideo(true)// 是否可预览视频
+                    .enablePreviewAudio(true) // 是否可播放音频
+                    .isCamera(false)// 是否显示拍照按钮
+                    .isZoomAnim(true)// 图片列表点击 缩放效果 默认true
+                    .enableCrop(false)// 是否裁剪
+                    .compress(false)// 是否压缩
+                    .synOrAsy(true)//同步true或异步false 压缩 默认同步
+                    //.compressSavePath(getPath())//压缩图片保存地址
+                    //.sizeMultiplier(0.5f)// glide 加载图片大小 0~1之间 如设置 .glideOverride()无效
+                    .glideOverride(160, 160)// glide 加载宽高，越小图片列表越流畅，但会影响列表图片浏览的清晰度
+                    .hideBottomControls(false)// 是否显示uCrop工具栏，默认不显示
+                    .isGif(true)// 是否显示gif图片
+                    .selectionMedia(selecPictList)// 是否传入已选图片
+                    .previewEggs(true)// 预览图片时 是否增强左右滑动图片体验(图片滑动一半即可看到上一张是否选中)
+                    .minimumCompressSize(100)// 小于100kb的图片不压缩
+                    .forResult(PictureConfig.TYPE_IMAGE);//结果回调onActivityResult code
+        }
+    };
+
+    private ImageAdapter.onAddPicClickListener onAddVideoClickListener = new ImageAdapter.onAddPicClickListener() {
+        @Override
+        public void onAddPicClick() {
+            // 进入相册 以下是例子：不需要的api可以不写
+            PictureSelector.create(MainActivity.this)
+                    .openGallery(PictureMimeType.ofVideo())// 全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
+                    .theme(R.style.picture_default_style)// 主题样式设置 具体参考 values/styles   用法：R.style.picture.white.style
+                    .maxSelectNum(maxSelectNum)// 最大图片选择数量
+                    .minSelectNum(1)// 最小选择数量
+                    .imageSpanCount(3)// 每行显示个数
+                    .selectionMode(PictureConfig.MULTIPLE)// 多选 or 单选
+                    .previewImage(true)// 是否可预览图片
+                    .previewVideo(true)// 是否可预览视频
+                    .enablePreviewAudio(true) // 是否可播放音频
+                    .isCamera(false)// 是否显示拍照按钮
+                    .isZoomAnim(true)// 图片列表点击 缩放效果 默认true
+                    .enableCrop(false)// 是否裁剪
+                    .compress(false)// 是否压缩
+                    .synOrAsy(true)//同步true或异步false 压缩 默认同步
+                    //.compressSavePath(getPath())//压缩图片保存地址
+                    //.sizeMultiplier(0.5f)// glide 加载图片大小 0~1之间 如设置 .glideOverride()无效
+                    .glideOverride(160, 160)// glide 加载宽高，越小图片列表越流畅，但会影响列表图片浏览的清晰度
+                    .hideBottomControls(false)// 是否显示uCrop工具栏，默认不显示
+                    .isGif(true)// 是否显示gif图片
+                    .selectionMedia(selectVideoList)// 是否传入已选图片
+                    .previewEggs(true)// 预览图片时 是否增强左右滑动图片体验(图片滑动一半即可看到上一张是否选中)
+                    .minimumCompressSize(100)// 小于100kb的图片不压缩
+                    .forResult(PictureConfig.TYPE_VIDEO);//结果回调onActivityResult code
+        }
+    };
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (resultCode == RESULT_OK) {
+            switch (requestCode) {
+                case PictureConfig.TYPE_AUDIO:
+                    // 图片选择结果回调
+                    selectAudioList = PictureSelector.obtainMultipleResult(data);
+                    // 例如 LocalMedia 里面返回三种path
+                    // 1.media.getPath(); 为原图path
+                    // 2.media.getCutPath();为裁剪后path，需判断media.isCut();是否为true
+                    // 3.media.getCompressPath();为压缩后path，需判断media.isCompressed();是否为true
+                    // 如果裁剪并压缩了，已取压缩路径为准，因为是先裁剪后压缩的
+                    for (LocalMedia media : selectAudioList) {
+                        KLog.e("音频-----》", media.getPath());
+                    }
+                    audioAdapter.setList(selectAudioList);
+                    audioAdapter.notifyDataSetChanged();
+                    break;
+                case PictureConfig.TYPE_IMAGE:
+                    selecPictList = PictureSelector.obtainMultipleResult(data);
+                    for (LocalMedia media : selecPictList) {
+                        KLog.e("图片-----》", media.getPath());
+                    }
+                    picAdapter.setList(selecPictList);
+                    picAdapter.notifyDataSetChanged();
+                    break;
+                case PictureConfig.TYPE_VIDEO:
+                    selectVideoList = PictureSelector.obtainMultipleResult(data);
+                    for (LocalMedia media : selectVideoList) {
+                        KLog.e("视频-----》", media.getPath());
+                    }
+                    videoAdapter.setList(selectVideoList);
+                    videoAdapter.notifyDataSetChanged();
+                    break;
+            }
+        }
+    }
+
+    @Override
+    public void onClick(View view) {
+        switch(view.getId()){
+            case R.id.btn_audio:
+                audioAdapter.mOnAddPicClickListener.onAddPicClick();
+                break;
+            case R.id.btn_pic:
+                picAdapter.mOnAddPicClickListener.onAddPicClick();
+                break;
+            case R.id.btn_video:
+                videoAdapter.mOnAddPicClickListener.onAddPicClick();
+                break;
+            default:
+                break;
+        }
     }
 }
