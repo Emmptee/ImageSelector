@@ -7,7 +7,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
@@ -21,6 +20,7 @@ import com.luck.picture.lib.tools.PictureFileUtils;
 import com.socks.library.KLog;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import io.reactivex.Observer;
@@ -33,7 +33,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private List<LocalMedia> selectVideoList = new ArrayList<>();
     private int clickType = 5;
 
-    private int maxSelectNum = 9;
+    private int maxSelectNum = 1000;
 
     private Button mAudioBtn;
     private Button mPicBtn;
@@ -43,9 +43,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private RecyclerView mVideoRecycler;
     private ImageAdapter audioAdapter, picAdapter, videoAdapter;
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_main);
         mAudioBtn = (Button) findViewById(R.id.btn_audio);
         mPicBtn = (Button) findViewById(R.id.btn_pic);
@@ -58,11 +60,23 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mPicBtn.setOnClickListener(this);
         mVideoBtn.setOnClickListener(this);
 
-        MyGridLayoutManager audioManager = new MyGridLayoutManager(MainActivity.this, 4, GridLayoutManager.VERTICAL, false);
+        //Item之间的间距
+        HashMap<String, Integer> stringIntegerHashMap = new HashMap<>();
+        stringIntegerHashMap.put(SelectorItemDecoration.TOP_DECORATION,10);//top间距
+
+        stringIntegerHashMap.put(SelectorItemDecoration.BOTTOM_DECORATION,10);//底部间距
+
+        stringIntegerHashMap.put(SelectorItemDecoration.LEFT_DECORATION,10);//左间距
+
+        stringIntegerHashMap.put(SelectorItemDecoration.RIGHT_DECORATION,10);//右间距
+
+
+        SelectorGridLayoutManager audioManager = new SelectorGridLayoutManager(MainActivity.this, 3, GridLayoutManager.VERTICAL, false);
         mAudioRecycler.setLayoutManager(audioManager);
+        mAudioRecycler.addItemDecoration(new SelectorItemDecoration(stringIntegerHashMap));
         audioAdapter = new ImageAdapter(MainActivity.this, onAddAudioClickListener);
         audioAdapter.setList(selectAudioList);
-        audioAdapter.setSelectMax(maxSelectNum);
+//        audioAdapter.setSelectMax(maxSelectNum);
         mAudioRecycler.setAdapter(audioAdapter);
         audioAdapter.setOnItemClickListener(new ImageAdapter.OnItemClickListener() {
             @Override
@@ -74,11 +88,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-        MyGridLayoutManager picManager = new MyGridLayoutManager(MainActivity.this, 3, GridLayoutManager.VERTICAL, false);
+        SelectorGridLayoutManager picManager = new SelectorGridLayoutManager(MainActivity.this, 3, GridLayoutManager.VERTICAL, false);
         mPicRecycler.setLayoutManager(picManager);
+        mPicRecycler.addItemDecoration(new SelectorItemDecoration(stringIntegerHashMap));
         picAdapter = new ImageAdapter(MainActivity.this, onAddPicClickListener);
         picAdapter.setList(selecPictList);
-        picAdapter.setSelectMax(maxSelectNum);
+//        picAdapter.setSelectMax(maxSelectNum);
         mPicRecycler.setAdapter(picAdapter);
         picAdapter.setOnItemClickListener(new ImageAdapter.OnItemClickListener() {
             @Override
@@ -90,11 +105,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         });
 
-        MyGridLayoutManager videoManager = new MyGridLayoutManager(MainActivity.this, 4, GridLayoutManager.VERTICAL, false);
+        SelectorGridLayoutManager videoManager = new SelectorGridLayoutManager(MainActivity.this, 3, GridLayoutManager.VERTICAL, false);
         mVideoRecycler.setLayoutManager(videoManager);
+        mVideoRecycler.addItemDecoration(new SelectorItemDecoration(stringIntegerHashMap));
         videoAdapter = new ImageAdapter(MainActivity.this, onAddVideoClickListener);
         videoAdapter.setList(selectVideoList);
-        videoAdapter.setSelectMax(maxSelectNum);
+//        videoAdapter.setSelectMax(maxSelectNum);
         mVideoRecycler.setAdapter(videoAdapter);
         videoAdapter.setOnItemClickListener(new ImageAdapter.OnItemClickListener() {
             @Override
@@ -134,9 +150,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
-    private ImageAdapter.onAddPicClickListener onAddAudioClickListener = new ImageAdapter.onAddPicClickListener() {
+    private ImageAdapter.onAddClickListener onAddAudioClickListener = new ImageAdapter.onAddClickListener() {
         @Override
-        public void onAddPicClick() {
+        public void onAddClick() {
             // 进入相册 以下是例子：不需要的api可以不写
             PictureSelector.create(MainActivity.this)
                     .openGallery(PictureMimeType.ofAudio())// 全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
@@ -165,9 +181,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     };
 
-    private ImageAdapter.onAddPicClickListener onAddPicClickListener = new ImageAdapter.onAddPicClickListener() {
+    private ImageAdapter.onAddClickListener onAddPicClickListener = new ImageAdapter.onAddClickListener() {
         @Override
-        public void onAddPicClick() {
+        public void onAddClick() {
             // 进入相册 以下是例子：不需要的api可以不写
             PictureSelector.create(MainActivity.this)
                     .openGallery(PictureMimeType.ofImage())// 全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
@@ -196,10 +212,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     };
 
-    private ImageAdapter.onAddPicClickListener onAddVideoClickListener = new ImageAdapter.onAddPicClickListener() {
+    private ImageAdapter.onAddClickListener onAddVideoClickListener = new ImageAdapter.onAddClickListener() {
         @Override
-        public void onAddPicClick() {
-            // 进入相册 以下是例子：不需要的api可以不写
+        public void onAddClick() {
             PictureSelector.create(MainActivity.this)
                     .openGallery(PictureMimeType.ofVideo())// 全部.PictureMimeType.ofAll()、图片.ofImage()、视频.ofVideo()、音频.ofAudio()
                     .theme(R.style.picture_default_style)// 主题样式设置 具体参考 values/styles   用法：R.style.picture.white.style
@@ -270,13 +285,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View view) {
         switch(view.getId()){
             case R.id.btn_audio:
-                audioAdapter.mOnAddPicClickListener.onAddPicClick();
+                audioAdapter.mOnAddClickListener.onAddClick();
                 break;
             case R.id.btn_pic:
-                picAdapter.mOnAddPicClickListener.onAddPicClick();
+                picAdapter.mOnAddClickListener.onAddClick();
                 break;
             case R.id.btn_video:
-                videoAdapter.mOnAddPicClickListener.onAddPicClick();
+                videoAdapter.mOnAddClickListener.onAddClick();
                 break;
             default:
                 break;

@@ -1,13 +1,16 @@
 package com.sdf.myapplication;
 
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.RecyclerView;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -20,6 +23,7 @@ import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
 import com.luck.picture.lib.tools.DateUtils;
 import com.luck.picture.lib.tools.StringUtils;
+import com.socks.library.KLog;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -32,21 +36,28 @@ public class ImageAdapter extends
     public static final int TYPE_PICTURE = 2;
     private LayoutInflater mInflater;
     private List<LocalMedia> list = new ArrayList<>();
-    private int selectMax = 9;
+    private int selectMax = 100;
     private Context context;
+    private int mScreenWidth;
+    private int mScreenHeight;
     /**
      * 点击添加图片跳转
      */
-    public onAddPicClickListener mOnAddPicClickListener;
+    public onAddClickListener mOnAddClickListener;
 
-    public interface onAddPicClickListener {
-        void onAddPicClick();
+    public interface onAddClickListener {
+        void onAddClick();
     }
 
-    public ImageAdapter(Context context, onAddPicClickListener mOnAddPicClickListener) {
+    public ImageAdapter(Context context, onAddClickListener mOnAddClickListener) {
         this.context = context;
         mInflater = LayoutInflater.from(context);
-        this.mOnAddPicClickListener = mOnAddPicClickListener;
+        this.mOnAddClickListener = mOnAddClickListener;
+        DisplayMetrics dm = new DisplayMetrics();
+        ((Activity)context).getWindowManager().getDefaultDisplay().getMetrics(dm);
+        mScreenWidth=dm.widthPixels ;
+        mScreenHeight = dm.heightPixels;
+        KLog.e("屏幕的宽高为====" + mScreenHeight + mScreenWidth);
     }
 
     public void setSelectMax(int selectMax) {
@@ -73,11 +84,11 @@ public class ImageAdapter extends
 
     @Override
     public int getItemCount() {
-        if (list.size() < selectMax) {
-            return list.size() + 1;
-        } else {
+//        if (list.size() < selectMax) {
+//            return list.size() + 1;
+//        } else {
             return list.size();
-        }
+//        }
     }
 
     @Override
@@ -94,8 +105,9 @@ public class ImageAdapter extends
      */
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
-        View view = mInflater.inflate(R.layout.image_filter,
-                viewGroup, false);
+        View view = mInflater.inflate(R.layout.image_filter, viewGroup, false);
+        view.getLayoutParams().height = mScreenHeight/6;
+        view.getLayoutParams().width = mScreenHeight/6;
         final ViewHolder viewHolder = new ViewHolder(view);
         return viewHolder;
     }
@@ -110,16 +122,16 @@ public class ImageAdapter extends
      */
     @Override
     public void onBindViewHolder(final ViewHolder viewHolder, final int position) {
-        //少于8张，显示继续添加的图标
         if (getItemViewType(position) == TYPE_CAMERA) {
-            viewHolder.mImg.setImageResource(R.mipmap.addimg);
-            viewHolder.mImg.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    mOnAddPicClickListener.onAddPicClick();
-                }
-            });
-            viewHolder.ll_del.setVisibility(View.INVISIBLE);
+            viewHolder.mImg.setVisibility(View.GONE);
+//            viewHolder.mImg.setImageResource(R.mipmap.addimg);
+//            viewHolder.mImg.setOnClickListener(new View.OnClickListener() {
+//                @Override
+//                public void onClick(View v) {
+//                    mOnAddClickListener.onAddClick();
+//                }
+//            });
+//            viewHolder.ll_del.setVisibility(View.INVISIBLE);
         } else {
             viewHolder.ll_del.setVisibility(View.VISIBLE);
             viewHolder.ll_del.setOnClickListener(new View.OnClickListener() {
