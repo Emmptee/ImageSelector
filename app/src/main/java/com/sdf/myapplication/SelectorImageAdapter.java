@@ -10,7 +10,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
@@ -30,8 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-public class ImageAdapter extends
-        RecyclerView.Adapter<ImageAdapter.ViewHolder> {
+public class SelectorImageAdapter extends
+        RecyclerView.Adapter<SelectorImageAdapter.ViewHolder> {
     public static final int TYPE_CAMERA = 1;
     public static final int TYPE_PICTURE = 2;
     private LayoutInflater mInflater;
@@ -49,7 +48,7 @@ public class ImageAdapter extends
         void onAddClick();
     }
 
-    public ImageAdapter(Context context, onAddClickListener mOnAddClickListener) {
+    public SelectorImageAdapter(Context context, onAddClickListener mOnAddClickListener) {
         this.context = context;
         mInflater = LayoutInflater.from(context);
         this.mOnAddClickListener = mOnAddClickListener;
@@ -57,7 +56,7 @@ public class ImageAdapter extends
         ((Activity)context).getWindowManager().getDefaultDisplay().getMetrics(dm);
         mScreenWidth=dm.widthPixels ;
         mScreenHeight = dm.heightPixels;
-        KLog.e("屏幕的宽高为====" + mScreenHeight + mScreenWidth);
+        KLog.e("宽高为 " + mScreenHeight + mScreenWidth);
     }
 
     public void setSelectMax(int selectMax) {
@@ -123,23 +122,13 @@ public class ImageAdapter extends
     @Override
     public void onBindViewHolder(final ViewHolder viewHolder, final int position) {
         if (getItemViewType(position) == TYPE_CAMERA) {
-            viewHolder.mImg.setVisibility(View.GONE);
-//            viewHolder.mImg.setImageResource(R.mipmap.addimg);
-//            viewHolder.mImg.setOnClickListener(new View.OnClickListener() {
-//                @Override
-//                public void onClick(View v) {
-//                    mOnAddClickListener.onAddClick();
-//                }
-//            });
-//            viewHolder.ll_del.setVisibility(View.INVISIBLE);
+//            viewHolder.mImg.setVisibility(View.GONE);
         } else {
             viewHolder.ll_del.setVisibility(View.VISIBLE);
             viewHolder.ll_del.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     int index = viewHolder.getAdapterPosition();
-                    // 这里有时会返回-1造成数据下标越界,具体可参考getAdapterPosition()源码，
-                    // 通过源码分析应该是bindViewHolder()暂未绘制完成导致，知道原因的也可联系我~感谢
                     if (index != RecyclerView.NO_POSITION) {
                         list.remove(index);
                         notifyItemRemoved(index);
