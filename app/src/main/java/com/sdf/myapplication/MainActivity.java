@@ -9,6 +9,7 @@ import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import com.luck.picture.lib.PictureSelector;
@@ -17,7 +18,17 @@ import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
 import com.luck.picture.lib.permissions.RxPermissions;
 import com.luck.picture.lib.tools.PictureFileUtils;
+import com.sdf.myapplication.adapter.SelectorAudioAdapter;
+import com.sdf.myapplication.adapter.SelectorImageAdapter;
+import com.sdf.myapplication.adapter.SelectorVideoAdapter;
+import com.sdf.myapplication.event.SelectorAudioEvent;
+import com.sdf.myapplication.event.SelectorPicEvent;
+import com.sdf.myapplication.event.SelectorVideoEvent;
 import com.socks.library.KLog;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,13 +45,17 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private int clickType = 5;
 
     private int maxSelectNum = 1000;
+    private boolean isShowTitle = true;
 
-    private Button mAudioBtn, mImgBtn,mVideoBtn,mAudioDelBtn,mImgDelBtn,mVideoDelBtn;
-    private RecyclerView mAudioRecycler;
-    private RecyclerView mPicRecycler;
-    private RecyclerView mVideoRecycler;
-    private SelectorImageAdapter audioAdapter, picAdapter, videoAdapter;
-
+    private Button mAudioBtn, mImgBtn, mVideoBtn;
+    private RecyclerView mAudioRecycler, mPicRecycler, mVideoRecycler;
+    private SelectorImageAdapter mPicAdapter;
+    private SelectorAudioAdapter mAudioAdapter;
+    private SelectorVideoAdapter mVideoAdapter;
+    private LinearLayout mVideoTitle, mAudioTitle, mPicTitle;
+    private boolean clickAudio = false;
+    private boolean clickPic = false;
+    private boolean clickVideo = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -51,51 +66,38 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mImgBtn = (Button) findViewById(R.id.btn_pic);
         mVideoBtn = (Button) findViewById(R.id.btn_video);
 
-        mAudioDelBtn = (Button) findViewById(R.id.btn_del_audio);
-        mImgDelBtn = (Button) findViewById(R.id.btn_del_img);
-        mVideoDelBtn = (Button) findViewById(R.id.btn_del_video);
+        mAudioTitle = (LinearLayout) findViewById(R.id.title_audio);
+        mPicTitle = (LinearLayout) findViewById(R.id.title_pic);
+        mVideoTitle = (LinearLayout) findViewById(R.id.title_video);
 
         mAudioRecycler = (RecyclerView) findViewById(R.id.recycler_audio);
         mPicRecycler = (RecyclerView) findViewById(R.id.recycler_pic);
         mVideoRecycler = (RecyclerView) findViewById(R.id.recycler_video);
+        EventBus.getDefault().register(this);
 
         mAudioBtn.setOnClickListener(this);
         mImgBtn.setOnClickListener(this);
         mVideoBtn.setOnClickListener(this);
 
-        mAudioDelBtn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-////                int index = mAudioRecycler.getAdapterPosition();
-////                if (index != RecyclerView.NO_POSITION) {
-//                    selectAudioList.removeAll();
-//                    mAudioRecycler.notifyItemRemoved(index);
-//                    mAudioRecyclernotifyItemRangeChanged(index, list.size());
-////                }
-            }
-        });
-        mImgDelBtn.setOnClickListener(this);
-        mVideoDelBtn.setOnClickListener(this);
-
         //Item之间的间距
         HashMap<String, Integer> stringIntegerHashMap = new HashMap<>();
-        stringIntegerHashMap.put(SelectorItemDecoration.TOP_DECORATION,10);//top间距
+        stringIntegerHashMap.put(SelectorItemDecoration.TOP_DECORATION, 10);//top间距
 
-        stringIntegerHashMap.put(SelectorItemDecoration.BOTTOM_DECORATION,10);//底部间距
+        stringIntegerHashMap.put(SelectorItemDecoration.BOTTOM_DECORATION, 10);//底部间距
 
-        stringIntegerHashMap.put(SelectorItemDecoration.LEFT_DECORATION,10);//左间距
+        stringIntegerHashMap.put(SelectorItemDecoration.LEFT_DECORATION, 10);//左间距
 
-        stringIntegerHashMap.put(SelectorItemDecoration.RIGHT_DECORATION,10);//右间距
+        stringIntegerHashMap.put(SelectorItemDecoration.RIGHT_DECORATION, 10);//右间距
 
 
         SelectorGridLayoutManager audioManager = new SelectorGridLayoutManager(MainActivity.this, 3, GridLayoutManager.VERTICAL, false);
         mAudioRecycler.setLayoutManager(audioManager);
         mAudioRecycler.addItemDecoration(new SelectorItemDecoration(stringIntegerHashMap));
-        audioAdapter = new SelectorImageAdapter(MainActivity.this, onAddAudioClickListener);
-        audioAdapter.setList(selectAudioList);
-//        audioAdapter.setSelectMax(maxSelectNum);
-        mAudioRecycler.setAdapter(audioAdapter);
-        audioAdapter.setOnItemClickListener(new SelectorImageAdapter.OnItemClickListener() {
+        mAudioAdapter = new SelectorAudioAdapter(MainActivity.this, onAddAudioClickListener);
+        mAudioAdapter.setList(selectAudioList);
+//        mAudioAdapter.setSelectMax(maxSelectNum);
+        mAudioRecycler.setAdapter(mAudioAdapter);
+        mAudioAdapter.setOnItemClickListener(new SelectorAudioAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(int position, View v) {
                 if (selectAudioList.size() > 0) {
@@ -108,11 +110,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         SelectorGridLayoutManager picManager = new SelectorGridLayoutManager(MainActivity.this, 3, GridLayoutManager.VERTICAL, false);
         mPicRecycler.setLayoutManager(picManager);
         mPicRecycler.addItemDecoration(new SelectorItemDecoration(stringIntegerHashMap));
-        picAdapter = new SelectorImageAdapter(MainActivity.this, onAddPicClickListener);
-        picAdapter.setList(selectPictList);
-//        picAdapter.setSelectMax(maxSelectNum);
-        mPicRecycler.setAdapter(picAdapter);
-        picAdapter.setOnItemClickListener(new SelectorImageAdapter.OnItemClickListener() {
+        mPicAdapter = new SelectorImageAdapter(MainActivity.this, onAddPicClickListener);
+        mPicAdapter.setList(selectPictList);
+//        mPicAdapter.setSelectMax(maxSelectNum);
+        mPicRecycler.setAdapter(mPicAdapter);
+        mPicAdapter.setOnItemClickListener(new SelectorImageAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(int position, View v) {
                 if (selectPictList.size() > 0) {
@@ -125,11 +127,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         SelectorGridLayoutManager videoManager = new SelectorGridLayoutManager(MainActivity.this, 3, GridLayoutManager.VERTICAL, false);
         mVideoRecycler.setLayoutManager(videoManager);
         mVideoRecycler.addItemDecoration(new SelectorItemDecoration(stringIntegerHashMap));
-        videoAdapter = new SelectorImageAdapter(MainActivity.this, onAddVideoClickListener);
-        videoAdapter.setList(selectVideoList);
-//        videoAdapter.setSelectMax(maxSelectNum);
-        mVideoRecycler.setAdapter(videoAdapter);
-        videoAdapter.setOnItemClickListener(new SelectorImageAdapter.OnItemClickListener() {
+        mVideoAdapter = new SelectorVideoAdapter(MainActivity.this, onAddVideoClickListener);
+        mVideoAdapter.setList(selectVideoList);
+//        mVideoAdapter.setSelectMax(maxSelectNum);
+        mVideoRecycler.setAdapter(mVideoAdapter);
+        mVideoAdapter.setOnItemClickListener(new SelectorVideoAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(int position, View v) {
                 if (selectVideoList.size() > 0) {
@@ -167,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         });
     }
 
-    private SelectorImageAdapter.onAddClickListener onAddAudioClickListener = new SelectorImageAdapter.onAddClickListener() {
+    private SelectorAudioAdapter.onAddClickListener onAddAudioClickListener = new SelectorAudioAdapter.onAddClickListener() {
         @Override
         public void onAddClick() {
             PictureSelector.create(MainActivity.this)
@@ -222,7 +224,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     };
 
-    private SelectorImageAdapter.onAddClickListener onAddVideoClickListener = new SelectorImageAdapter.onAddClickListener() {
+    private SelectorVideoAdapter.onAddClickListener onAddVideoClickListener = new SelectorVideoAdapter.onAddClickListener() {
         @Override
         public void onAddClick() {
             PictureSelector.create(MainActivity.this)
@@ -265,44 +267,80 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     // 如果裁剪并压缩了，已取压缩路径为准
                     for (LocalMedia media : selectAudioList) {
                         KLog.e("音频-----》", media.getPath());
+                        KLog.e("音频数量    ====", selectAudioList.size());
                     }
-                    audioAdapter.setList(selectAudioList);
-                    audioAdapter.notifyDataSetChanged();
+
+                    mAudioTitle.setVisibility(View.VISIBLE);
+                    mAudioAdapter.setList(selectAudioList);
+                    mAudioAdapter.notifyDataSetChanged();
                     break;
                 case PictureConfig.TYPE_IMAGE:
                     selectPictList = PictureSelector.obtainMultipleResult(data);
                     for (LocalMedia media : selectPictList) {
                         KLog.e("图片-----》", media.getPath());
                     }
-                    picAdapter.setList(selectPictList);
-                    picAdapter.notifyDataSetChanged();
+                    mPicTitle.setVisibility(View.VISIBLE);
+                    mPicAdapter.setList(selectPictList);
+                    mPicAdapter.notifyDataSetChanged();
                     break;
                 case PictureConfig.TYPE_VIDEO:
                     selectVideoList = PictureSelector.obtainMultipleResult(data);
                     for (LocalMedia media : selectVideoList) {
                         KLog.e("视频-----》", media.getPath());
                     }
-                    videoAdapter.setList(selectVideoList);
-                    videoAdapter.notifyDataSetChanged();
+                    mVideoTitle.setVisibility(View.VISIBLE);
+                    mVideoAdapter.setList(selectVideoList);
+                    mVideoAdapter.notifyDataSetChanged();
                     break;
             }
         }
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(SelectorAudioEvent event) {
+        KLog.e("传递过来的值是" + event.getMessage());
+        if (event.getMessage() == false) {
+            mAudioTitle.setVisibility(View.GONE);
+        }
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(SelectorPicEvent event) {
+        KLog.e("传递过来的值是" + event.getMessage());
+        if (event.getMessage() == false) {
+            mPicTitle.setVisibility(View.GONE);
+        }
+    }
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(SelectorVideoEvent event) {
+        KLog.e("传递过来的值是" + event.getMessage());
+        if (event.getMessage() == false) {
+            mVideoTitle.setVisibility(View.GONE);
+        }
+    }
+
     @Override
     public void onClick(View view) {
-        switch(view.getId()){
+        switch (view.getId()) {
             case R.id.btn_audio:
-                audioAdapter.mOnAddClickListener.onAddClick();
+
+                mAudioAdapter.mOnAddClickListener.onAddClick();
                 break;
             case R.id.btn_pic:
-                picAdapter.mOnAddClickListener.onAddClick();
+
+                mPicAdapter.mOnAddClickListener.onAddClick();
                 break;
             case R.id.btn_video:
-                videoAdapter.mOnAddClickListener.onAddClick();
+
+                mVideoAdapter.mOnAddClickListener.onAddClick();
                 break;
             default:
                 break;
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        EventBus.getDefault().unregister(this);
     }
 }

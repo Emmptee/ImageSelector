@@ -1,4 +1,4 @@
-package com.sdf.myapplication;
+package com.sdf.myapplication.adapter;
 
 import android.app.Activity;
 import android.content.Context;
@@ -22,7 +22,11 @@ import com.luck.picture.lib.config.PictureMimeType;
 import com.luck.picture.lib.entity.LocalMedia;
 import com.luck.picture.lib.tools.DateUtils;
 import com.luck.picture.lib.tools.StringUtils;
+import com.sdf.myapplication.R;
+import com.sdf.myapplication.event.SelectorPicEvent;
 import com.socks.library.KLog;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -34,11 +38,12 @@ public class SelectorImageAdapter extends
     public static final int TYPE_CAMERA = 1;
     public static final int TYPE_PICTURE = 2;
     private LayoutInflater mInflater;
-    private List<LocalMedia> list = new ArrayList<>();
+    public List<LocalMedia> list = new ArrayList<>();
     private int selectMax = 100;
     private Context context;
     private int mScreenWidth;
     private int mScreenHeight;
+    private boolean isShowTitleForPic = true;
     /**
      * 点击添加图片跳转
      */
@@ -53,8 +58,8 @@ public class SelectorImageAdapter extends
         mInflater = LayoutInflater.from(context);
         this.mOnAddClickListener = mOnAddClickListener;
         DisplayMetrics dm = new DisplayMetrics();
-        ((Activity)context).getWindowManager().getDefaultDisplay().getMetrics(dm);
-        mScreenWidth=dm.widthPixels ;
+        ((Activity) context).getWindowManager().getDefaultDisplay().getMetrics(dm);
+        mScreenWidth = dm.widthPixels;
         mScreenHeight = dm.heightPixels;
         KLog.e("宽高为 " + mScreenHeight + mScreenWidth);
     }
@@ -86,7 +91,7 @@ public class SelectorImageAdapter extends
 //        if (list.size() < selectMax) {
 //            return list.size() + 1;
 //        } else {
-            return list.size();
+        return list.size();
 //        }
     }
 
@@ -105,8 +110,8 @@ public class SelectorImageAdapter extends
     @Override
     public ViewHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
         View view = mInflater.inflate(R.layout.image_filter, viewGroup, false);
-        view.getLayoutParams().height = mScreenHeight/6;
-        view.getLayoutParams().width = mScreenHeight/6;
+        view.getLayoutParams().height = mScreenHeight / 6;
+        view.getLayoutParams().width = mScreenHeight / 6;
         final ViewHolder viewHolder = new ViewHolder(view);
         return viewHolder;
     }
@@ -133,6 +138,12 @@ public class SelectorImageAdapter extends
                         list.remove(index);
                         notifyItemRemoved(index);
                         notifyItemRangeChanged(index, list.size());
+                    }
+                    if (index== 0){
+                        isShowTitleForPic = false;
+                        SelectorPicEvent selectorPicEvent = new SelectorPicEvent(isShowTitleForPic);
+                        EventBus.getDefault().post(selectorPicEvent);
+                        KLog.e("角标为=====" + index + "-----是否展示标题" + isShowTitleForPic);
                     }
                 }
             });

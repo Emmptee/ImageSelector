@@ -27,5 +27,5 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation 'com.github.LuckSiege.PictureSelector:picture_library:v2.2.3'
     implementation 'com.github.zhaokaiqiang.klog:library:1.6.0'
-
+    implementation 'org.greenrobot:eventbus:3.1.1'
 }
