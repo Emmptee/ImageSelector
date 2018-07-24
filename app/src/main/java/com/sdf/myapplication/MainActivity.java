@@ -298,21 +298,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(SelectorAudioEvent event) {
-        KLog.e("传递过来的值是" + event.getMessage());
         if (event.getMessage() == false) {
             mAudioTitle.setVisibility(View.GONE);
         }
     }
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(SelectorPicEvent event) {
-        KLog.e("传递过来的值是" + event.getMessage());
         if (event.getMessage() == false) {
             mPicTitle.setVisibility(View.GONE);
         }
     }
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onEvent(SelectorVideoEvent event) {
-        KLog.e("传递过来的值是" + event.getMessage());
         if (event.getMessage() == false) {
             mVideoTitle.setVisibility(View.GONE);
         }
